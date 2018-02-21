@@ -60,53 +60,53 @@ The host and the device have separate memory spaces. The device memory is referr
 CUDA gives us API functions that perform these things for us. Let's look into them:
 
 * `cudaMalloc()`: called from the host code to allocate a piece of device global memory for an object.
-	* **address**: address of a pointer to allocated object. Should be cast to `void`.
-	* **size**: size of allocated object in terms of bytes
+    * **address**: address of a pointer to allocated object. Should be cast to `void`.
+    * **size**: size of allocated object in terms of bytes
 * `cudaFree()`: frees object from device global memory
-	* **pointer**: pointer to the freed object.
+    * **pointer**: pointer to the freed object.
 * `cudaMemcpy()`: memory data transfer
-	* **dest**: pointer to destination
-	* **src**: pointer to source
-	* **size**: number of bytes copied
-	* **dir**: type/direction of copy.
+    * **dest**: pointer to destination
+    * **src**: pointer to source
+    * **size**: number of bytes copied
+    * **dir**: type/direction of copy.
 
 Here's an example of how we use each in the `vecAdd()` method of the earlier section:
 
 ```c
 float *d_A = NULL;
-int size = 	n * sizeof(float);
+int size = n * sizeof(float);
 
 cudaMalloc((void **) &d_A, size);
 cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
 cudaFree(d_A)
-```   
-So we have the tools to code all the steps mentioned in section 2 except the kernel invocation. Let's go ahead and write the code.
+```
+So we have the tools to code all the steps mentioned in section 2 except for the kernel invocation. Let's go ahead and code them up.
 
 ```c
 void vecAdd(float* A, float* B, float* C, int n)
 {
-	// params
-   int size = n * sizeof(float);
-   float *d_A, *d_B, *d_C;
-   
-   // allocate host vectors
-   cudaMalloc((void **) &d_A, size);
-   cudaMalloc((void **) &B_d, size);
-   cudaMalloc((void **) &d_C, size);
-   
-   // initialize
-   
-   // copy A and B to device memory
-   cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
-   cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
-   
-	// kernel invocation code
-	
-	// copy C from device to host
-   cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
-   
-   // free up resources
-   cudaFree(d_Ad); cudaFree(d_B); cudaFree (d_C);
+    // params
+    int size = n * sizeof(float);
+    float *d_A, *d_B, *d_C;
+
+    // allocate host vectors
+    cudaMalloc((void **) &d_A, size);
+    cudaMalloc((void **) &B_d, size);
+    cudaMalloc((void **) &d_C, size);
+
+    // possible initialization
+
+    // copy A and B to device memory
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    // kernel invocation code
+
+    // copy C from device to host
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    // free up resources
+    cudaFree(d_Ad); cudaFree(d_B); cudaFree (d_C);
 }
 ```
 
