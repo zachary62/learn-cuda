@@ -1,5 +1,6 @@
-# Applied Parallel Programming
+# learning-gpu
 
+Currently learning some GPU CUDA programming.
 
 ## References
 
