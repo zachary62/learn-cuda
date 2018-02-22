@@ -32,13 +32,13 @@ void vecAdd(float* h_A, float* h_B, float* h_C, int n) {
 }
 int main() {
     // memory allocation for h_A, h_B, h_C
+
     // initialization of h_A, h_B
+
     vecAdd(h_A, h_B, h_C, N); 
 }
 ```
 Note the convention of prefixing the names of variables that are processed by the host with `h_` and those of variables that are processed by the device with `d_`.
-
-**Todo**: refresh my knowledge about pointers, referencing, etc.
 
 The steps to modify `vecAdd` such that it can run on the device are:
 
@@ -47,7 +47,7 @@ The steps to modify `vecAdd` such that it can run on the device are:
 * copy A and B to device memory
 * kernel launch
 * copy C from the device memory to the host memory
-* free up resources
+* free up resources on device and possibly on host
 
 ## Global Memory and Data Transfer
 
