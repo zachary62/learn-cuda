@@ -31,7 +31,7 @@ Let's begin with a refresher, CPU-only version of vector addition.
 
 ```c
 // compute vector sum h_C = h_A + h_B
-void vec_add(float* h_A, float* h_B, float* h_C, int n) {
+void vecAdd(float* h_A, float* h_B, float* h_C, int n) {
     for (i = 0; i < n; i++) {
         h_C[i] = h_A[i] + h_B[i];
     }
@@ -40,7 +40,7 @@ int main() {
     // boilerplate code
 
     // function call
-    vec_add(h_A, h_B, h_C, N);
+    vecAdd(h_A, h_B, h_C, N);
     
     // boilerplate code
 }
@@ -55,12 +55,12 @@ The boilerplate code usually consists in:
 
 The `vec_add` function uses a for loop to iterate through the vector elements. In the ith iteration, output element `C[i]` receives the sum of `A[i]` and `B[i]`. The vector length parameter `n` is used to control the loop so that the number of iterations matches the length of the vectors.
 
-Let's parallelize this code by moving its calculations to the GPU. Note the `...` which denotes boilerplate code such as the one mentioned above.
+Let's parallelize this code by moving its calculations to the GPU. Note that `...` denotes boilerplate code such as the one mentioned above.
 
 ```c
 #include <cuda.h>
 
-void vec_add(float* A, float* B, float* C, int n) {
+void vecAdd(float* A, float* B, float* C, int n) {
     int size = n * sizeof(float); 
     float* d_A;
     float* d_B;
@@ -120,10 +120,12 @@ void vecAdd(float* A, float* B, float* C, int n)
     float* d_B;
     float* d_C;
 
+    // ...
+
     // allocate host vectors
-    cudaMalloc((void **) &d_A, size);
-    cudaMalloc((void **) &B_d, size);
-    cudaMalloc((void **) &d_C, size);
+    cudaMalloc((void**) &d_A, size);
+    cudaMalloc((void**) &B_d, size);
+    cudaMalloc((void**) &d_C, size);
 
     // possible initialization
 
@@ -168,7 +170,7 @@ Given what we've just learned, let's write a simple kernel for adding 2 vectors:
 
 ```c
 __global__
-void vector_add(float* A, float* B, float* C, int n) {
+void vecAdd(float* A, float* B, float* C, int n) {
     int i = threadIdx.x + blockDim.x * blockIdx.x;
     if (i < n) C[i] = A[i] + B[i];
 }
@@ -192,7 +194,7 @@ How do we launch the kernel we just wrote? We do so by specifying **execution co
 
 ```c
 // kernel launch
-vector_add<<<ceil(n/256.0), 256>>>(d_A, d_B, d_C, n);
+vecAdd<<<ceil(n/256.0), 256>>>(d_A, d_B, d_C, n);
 ```
 
 ## Performance Note
