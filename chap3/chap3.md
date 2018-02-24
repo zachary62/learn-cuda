@@ -1,5 +1,11 @@
 # Data Parallelism and CUDA C
 
+In the following sections, we'll be illustrating the CUDA programming model by writing a simple vector addition program.
+
+<p align="center">
+ <img src="../assets/vec-add.png" alt="Drawing", width=35%>
+</p>
+
 ## Program Structure
 
 * **host**: cpu
@@ -21,33 +27,56 @@ The execution of a CUDA program starts with the execution of the host program. W
 
 ## Vector Addition Kernel
 
-Let's start with a CPU sequential version of vector addition.
+Let's begin with a refresher, CPU-only version of vector addition.
 
 ```c
 // compute vector sum h_C = h_A + h_B
-void vecAdd(float* h_A, float* h_B, float* h_C, int n) {
+void vec_add(float* h_A, float* h_B, float* h_C, int n) {
     for (i = 0; i < n; i++) {
         h_C[i] = h_A[i] + h_B[i];
     }
 }
 int main() {
-    // memory allocation for h_A, h_B, h_C
+    // boilerplate code
 
-    // initialization of h_A, h_B
-
-    vecAdd(h_A, h_B, h_C, N); 
+    // function call
+    vec_add(h_A, h_B, h_C, N);
+    
+    // boilerplate code
 }
 ```
-Note the convention of prefixing the names of variables that are processed by the host with `h_` and those of variables that are processed by the device with `d_`.
+We'll be using the convention of prefixing the names of variables that are processed by the host with `h_` and those processed by the device with `d_`.
 
-The steps to modify `vecAdd` such that it can run on the device are:
+The boilerplate code usually consists in:
 
-* allocate host vectors + initialize them
-* allocate device memory for A, B, C
-* copy A and B to device memory
-* kernel launch
-* copy C from the device memory to the host memory
-* free up resources on device and possibly on host
+* allocating memory for the inputs and outputs.
+* initializing the inputs or reading them from an external file.
+* potentially freeing up resources.
+
+The `vec_add` function uses a for loop to iterate through the vector elements. In the ith iteration, output element `C[i]` receives the sum of `A[i]` and `B[i]`. The vector length parameter `n` is used to control the loop so that the number of iterations matches the length of the vectors.
+
+Let's parallelize this code by moving its calculations to the GPU. Note the `...` which denotes boilerplate code such as the one mentioned above.
+
+```c
+#include <cuda.h>
+
+void vec_add(float* A, float* B, float* C, int n) {
+    int size = n * sizeof(float); 
+    float* d_A;
+    float* d_B;
+    float* d_C;
+
+    // ...
+
+    // 1. allocate device memory for A, B, C
+    // 2. copy A and B to device memory
+    // 3. kernel launch
+    // 4. copy C from device memory to host memory
+    // 4. free device memory
+}
+```
+
+We'll be going over the numbered parts of the code in the following sections.
 
 ## Global Memory and Data Transfer
 
@@ -73,7 +102,7 @@ CUDA gives us API functions that perform these things for us. Let's look into th
 Here's an example of how we use each in the `vecAdd()` method of the earlier section:
 
 ```c
-float *d_A = NULL;
+float* d_A;
 int size = n * sizeof(float);
 
 cudaMalloc((void **) &d_A, size);
@@ -87,7 +116,9 @@ void vecAdd(float* A, float* B, float* C, int n)
 {
     // params
     int size = n * sizeof(float);
-    float *d_A, *d_B, *d_C;
+    float* d_A;
+    float* d_B;
+    float* d_C;
 
     // allocate host vectors
     cudaMalloc((void **) &d_A, size);
@@ -177,7 +208,3 @@ This vector addition example will probably be slower on the GPU than on the CPU.
 **Predefined Variables.** CUDA kernels can access a set of predefined variables that allow each thread to distinguish among themselves and to determine the area of data each thread is to work on. We saw 3 variables: `threadIdx`, `blockIdx` and `blockDim`.
 
 **API.** CUDA supports a set of API functions such as `cudaMalloc()`, `cudaFree()`, and `cudaMemcpy()`. These functions allocate device memory and transfer data between host and device.
-
-## Application
-
-- [Vector Addition](https://github.com/kevinzakka/learning-gpu/blob/master/vec_add.cu)

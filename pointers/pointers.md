@@ -29,7 +29,7 @@ To declare a pointer to a variable do:
 ```c
 int *pointer;
 ```
-We must associate a pointer to a particular type. Why? Well, as we just saw, a pointer has the ability to directly refer to the value that it points to (using the dereference operator). As such, a pointer will have different properties if it points to a char, an int or a float. The pointer needs to know how many bytes the data is stored in. Thus, if we increment a pointer by 1, we implicitly increase the pointer by one **block** of memory.
+We must associate a pointer to a particular type. Why? Well, as we just saw, a pointer has the ability to directly refer to the value that it points to (using the dereference operator). As such, a pointer will have different properties if it points to a char, an int or a float. The pointer needs to know how many bytes the data is stored in. This is useful for pointer arithmetic: if we increment a pointer by 1 for example, we implicitly increase the pointer by one **block** of memory.
 
 When a pointer is declared it does not point anywhere. We must set it to point somewhere before we use it. Common practice is to assign it the value of `NULL` at instantiation. 
 
@@ -45,4 +45,5 @@ A pointer to any variable type is an address in memory, which is an integer addr
 
 ## References
 
+- [A Tutorial on Pointers and Arrays in C](https://pdos.csail.mit.edu/6.828/2014/readings/pointers.pdf)
 - [C Pointer](https://users.cs.cf.ac.uk/Dave.Marshall/C/node10.html)
