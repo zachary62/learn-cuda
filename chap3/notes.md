@@ -72,7 +72,7 @@ void vecAdd(float* A, float* B, float* C, int n) {
     // 2. copy A and B to device memory
     // 3. kernel launch
     // 4. copy C from device memory to host memory
-    // 4. free device memory
+    // 5. free device memory
 }
 ```
 
