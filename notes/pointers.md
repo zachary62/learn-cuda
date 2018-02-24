@@ -7,19 +7,11 @@ A pointer is a variable which contains the address in memory of another variable
 The address of a variable can be obtained by preceding its name with an ampersand sign (&). & is known as the "address-of" operator. For example, `foo = &my_var` assigns the address of variable `my_var` to foo. Let's write some code to see what it would print:
 
 ```c
-#include <stdio.h>
-
-int main() {
-
-    int var = 20;
-    int *foo = &var;
-
-    printf("foo: %p\n", foo); // prints 0x7fff52735a68
-
-    return 0;
-}
+int var = 20;
+int *foo = &var;
+printf("foo: %p\n", foo); // prints 0x7fff52735a68
 ```
-The actual address of a variable in memory cannot be known before runtime. Running this code twice will print out different values for foo.
+The actual address of a variable in memory cannot be known before runtime. Running this code a second time will print the value `0x7fff51440a68`.
 
 Pointers are said to "point to" the variable whose address they store. An interesting property of pointers is they they can be used to access the variable they point to directly. This is done by preceding the pointer name with the *dereference oeprator (*)* which can be read as "value pointed to by".
 
