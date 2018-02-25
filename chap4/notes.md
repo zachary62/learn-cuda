@@ -33,3 +33,44 @@ Obviously, hardware constraints impose limits on the dimensions of the grid and 
 
 ## Mapping Threads to Multidimensional Data
 
+The choice of 1D, 2D, or 3D thread organizations is usually based on the nature of the data. For example, grayscale images are a 2D array of pixels `(H, W)` while RGB images are a 3D array of pixels `(H, W, C)`.
+
+It is often convenient to use a 2D grid that consists of 2D blocks to process the pixels in a picture. For example, consider an image of size `76x62`. Assume that we decided to use a `16x16` block, with 16 threads in the x direction and 16 threads in the y direction. To process such an image, we would need `ceil(76  / 16) = 5` blocks in the x dimension and `ceil(62 / 16) = 4` blocks in the y dimension. This results in `5*4=20` blocks for a total of `20*16*16=5,120` threads. However, there are only 4,712 pixels in the image, so we would have an if statement to disable the extra threads from doing work.
+
+Here's some code to launch a kernel to process an image of height `H` and width `W`. Note that the number of rows corresponds to the height (the y direction) and that the number of columns corresponds to the width (the x direction). In this example, we assume for simplicity that the dimensions of the blocks are fixed at `16x16`.
+
+```c
+dim3 dimBlock(ceil(W/16.0), ceil(H/16.0), 1);
+dim3 dimGrid(16, 16, 1);
+processImg<<<dimGrid, dimBlock>>>(...);
+```
+Now that we've seen how to map the 2D grids and threads to the image, let's write a kernel that scales each value in an image by 2. First, let's examine how we can compute the global coordinates of a thread in a grid.
+
+<p align="center">
+ <img src="../assets/grid-img.png" alt="Drawing", width=48%>
+</p>
+
+The row of this tread can be calculated using the y dimension and the column can be calculate using the x dimension. The pink thread is located in `row=1, col=2`.
+
+- row: We've consumed 4 threads since we're in row 1 plus an extra 1 since we're at row 1 inside the block. Thus the index of the row is `4+1=5`. Generalizing from this example, we can write `row = (blockIdx.y * blockDim.y) + threadIdx.y`.
+- col: We've consumed `4*2=8` threads since we're in col 2 plus an extra 2 since we're at col 2 inside the block. The the index of the col is `8+2=10`. Generalizing from this example, we can write `col = (blockIdx.x * blockDim.x) + threadIdx.x`.
+
+Once the global coordinates of a thread within a grid are obtained, we linearize them to access the flattened data elements in row-major format. Thus, our image scaling kernel can now be completed:
+
+```c
+__global__ void imgScaler(float* imgIn, float* imgOut, int H, int W) {
+    // compute global thread coordinates
+    int row = (blockIdx.y * blockDim.y) + threadIdx.y;
+    int col = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    // flatten coordinates
+    int offset = row * W + col;
+
+    if ((row < H) && (col < W)) {
+        imgOut[offset] = 2 * imgIn[offset];
+    }
+}
+```
+How would things have changed had we used a different set of ECPs? Suppose we had fixed the number of threads in a block to be 256 in 1 dimension. Then, we would have had 1D blocks within a 2D grid `dim3 dimBlock(ceil(W/256.0), ceil(H/256.0), 1)`. The `col` global coordinate would have stayed the same, but `row` would have collapsed to `blockIdx.y`. We don't even have to instantiate a 2D grid. We could have had `dimBlock = 256` and `dimGrid = ceil((H * W) / 256.0)`. Then, the offset would be exactly as in our vector example `offset = blockIdx.x * blockDim.x + threadIdx.x`. This shows you how manipulating the ECPs can lead to different indexing in the kernel.
+
+

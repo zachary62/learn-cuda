@@ -169,8 +169,7 @@ i = blockIdx.x * blockDim.x + threadIdx.x
 Given what we've just learned, let's write a simple kernel for adding 2 vectors:
 
 ```c
-__global__
-void vecAdd(float* A, float* B, float* C, int n) {
+__global__ void vecAdd(float* A, float* B, float* C, int n) {
     int i = threadIdx.x + blockDim.x * blockIdx.x;
     if (i < n) C[i] = A[i] + B[i];
 }
