@@ -199,7 +199,7 @@ vecAdd<<<ceil(n/256.0), 256>>>(d_A, d_B, d_C, n);
 
 ## Performance Note
 
-This vector addition example will probably be slower on the GPU than on the CPU. The reason is that the overhead of allocating device memory, input data transfer from host to device, output data transfer from device to host, and de-allocating device memory is expensive. In fact, the amount of calculation done by the kernel is `1 FLOPS / 3 MEM`, i.e. one addition is performed for two floating-point input operands and one floating-point output operand.
+This vector addition example will probably be slower on the GPU than on the CPU. The reason is that the overhead of allocating device memory, transferring input data from host to device, transferring output data from device to host, and de-allocating device memory is expensive. In fact, the amount of calculation done by the kernel is 1 flop / 3 memory accesses, i.e. one addition is performed for two floating-point input operands and one floating-point output operand.
 
 ## Summary
 
