@@ -32,7 +32,7 @@ int main(void) {
 
     // initialize host matrices
     int i, j, offset;
-    int count1, count2 = 0;
+    float count1, count2 = 0.;
     for (i = 0; i <  M; i++) {
         for (j = 0; j < M; j++) {
             offset = i*M + j;
@@ -41,14 +41,26 @@ int main(void) {
         h_B[i] = ++count2;
     }
 
+    // print matrices
+    printf("A: ");
+    for (i = 0; i <  M; i++)
+        for (j = 0; j < M; j++)
+            printf("%f ", h_A[i*M + j]);
+    printf("\nB: ");
+    for (i = 0; i <  M; i++)
+            printf("%f ", h_B[i]);
+
     // allocate device matrices
-    cudaMalloc((void**)&d_A, size)
-    cudaMalloc((void**)&d_B, size)
-    cudaMalloc((void**)&d_C, size)
+    float* d_A;
+    float* d_B;
+    float* d_C;
+    cudaMalloc((void**)&d_A, sizeMatrix);
+    cudaMalloc((void**)&d_B, sizeVec);
+    cudaMalloc((void**)&d_C, sizeVec);
 
     // host matrices -> device matrices
-    cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_A, h_A, sizeMatrix, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, h_B, sizeVec, cudaMemcpyHostToDevice);
 
     // kernel launch
     int numThreads = M;
@@ -56,12 +68,13 @@ int main(void) {
     matrixVecMultiply<<<numBlocks, numThreads>>>(d_A, d_B, d_C, M);
 
     // device matrices -> host matrices
-    cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_C, d_C, sizeVec, cudaMemcpyDeviceToHost);
 
     // print result
+    printf("\nC: ");
     for (i = 0; i <  M; i++)
-        for (j = 0; j < M; j++)
-            printf("%f ", h_C[i*M + j]);
+        printf("%f ", h_C[i]);
+    printf("\n");
 
     // free device and host memory
     cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);

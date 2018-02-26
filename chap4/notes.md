@@ -44,7 +44,7 @@ dim3 dimBlock(ceil(W/16.0), ceil(H/16.0), 1);
 dim3 dimGrid(16, 16, 1);
 processImg<<<dimGrid, dimBlock>>>(...);
 ```
-Now that we've seen how to map the 2D grids and threads to the image, let's write a kernel that scales each value in an image by 2. First, let's examine how we can compute the global coordinates of a thread in a grid.
+Now that we've seen how to map the 2D grids and threads to the image, let's write a kernel that scales each value in an image by 2. First, let's examine how we can compute the global coordinates of the pink thread in the grid below.
 
 <p align="center">
  <img src="../assets/grid-img.png" alt="Drawing", width=48%>
@@ -52,8 +52,8 @@ Now that we've seen how to map the 2D grids and threads to the image, let's writ
 
 The row of this tread can be calculated using the y dimension and the column can be calculate using the x dimension. The pink thread is located in `row=1, col=2`.
 
-- row: We've consumed 4 threads since we're in row 1 plus an extra 1 since we're at row 1 inside the block. Thus the index of the row is `4+1=5`. Generalizing from this example, we can write `row = (blockIdx.y * blockDim.y) + threadIdx.y`.
-- col: We've consumed `4*2=8` threads since we're in col 2 plus an extra 2 since we're at col 2 inside the block. The the index of the col is `8+2=10`. Generalizing from this example, we can write `col = (blockIdx.x * blockDim.x) + threadIdx.x`.
+- `row`: We've consumed 4 threads since we're in row 1 plus an extra 1 since we're at row 1 inside the block. Thus the index of the row is `4+1=5`. Generalizing from this example, we can write `row = (blockIdx.y * blockDim.y) + threadIdx.y`.
+- `col`: We've consumed `4*2=8` threads since we're in col 2 plus an extra 2 since we're at col 2 inside the block. The the index of the col is `8+2=10`. Generalizing from this example, we can write `col = (blockIdx.x * blockDim.x) + threadIdx.x`.
 
 Once the global coordinates of a thread within a grid are obtained, we linearize them to access the flattened data elements in row-major format. Thus, our image scaling kernel can now be completed:
 
@@ -73,4 +73,32 @@ __global__ void imgScaler(float* imgIn, float* imgOut, int H, int W) {
 ```
 How would things have changed had we used a different set of ECPs? Suppose we had fixed the number of threads in a block to be 256 in 1 dimension. Then, we would have had 1D blocks within a 2D grid `dim3 dimBlock(ceil(W/256.0), ceil(H/256.0), 1)`. The `col` global coordinate would have stayed the same, but `row` would have collapsed to `blockIdx.y`. We don't even have to instantiate a 2D grid. We could have had `dimBlock = 256` and `dimGrid = ceil((H * W) / 256.0)`. Then, the offset would be exactly as in our vector example `offset = blockIdx.x * blockDim.x + threadIdx.x`. This shows you how manipulating the ECPs can lead to different indexing in the kernel.
 
+The code above assumed the image was grayscale. If we instead work with RGB images, then the pixel values are stored in consecutive triplets (r, g, b) although this order may differ depending on the library used to load the image. With three values where previously there was 1, our image has been effectively stretched in the x direction by a factor of 3 (the 3 channels). Thus, with each thread working on 3 pixels in the image, our code becomes:
 
+```c
+// C = 3 if rgb else 1
+__global__ void imgScaler(float* imgIn, float* imgOut, int H, int W, int C) {
+    // compute global thread coordinates
+    int row = (blockIdx.y * blockDim.y) + threadIdx.y;
+    int col = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    // flatten coordinates
+    int offset = row * W * C + col;
+
+    if ((row < H) && (col < W)) {
+        imgOut[offset] = 2 * imgIn[offset];
+        imgOut[offset + 1] = 2 * imgIn[offset + 1];
+        imgOut[offset + 2] = 2 * imgIn[offset + 2];
+    }
+}
+```
+
+## Matrix-Matrix Multiplication
+
+In this section, we'll be focusing on the multiplication of square matrices. Suppose we are multiplying A and B and storing the result in C, i.e. `C = A*B`. When performing the multiplication, element (i, j) of C corresponds to the dot product of row i of A and col j of B. 
+
+<p align="center">
+ <img src="../assets/mmul.png" alt="Drawing", width=48%>
+</p>
+
+As in our `imgScaler` kernel, we need to map each thread of our grid to a single element of P. With this thread-to-data mapping, we effectively divide our matrix P into square tiles, each tile being the size of a block.
