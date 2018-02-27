@@ -123,3 +123,49 @@ column from B. To perform this dot product, we initialize a variable `cumSum` be
 - To access a row element from A, we first need to account for all the rows before us since A is linearized into an equivalent 1D array where the rows are placed one after another in the memory space (column-major). For example, the beginning element of row 1 is accessed using index `1*M` where `M` is the size of the square matrix. In general, the beginning element of row `row` is accessed using index `row*M`. To get the k'th element in that row, we just add k to obtain `row*M + k`.
 - To access a column element from B, we need to realize that the k'th element of column i is located at the i'th element at row k. Accessing the next element in the column requires skipping exactly an entire row, because the next element in the column corresponds to the same element in the next row. Thus, we obtain the index `k*M + col`.
 
+## Synchronization and Transparent Scalability
+
+In this part, we discuss how CUDA coordinates the execution of multiple threads. CUDA allows threads in the same block to coordinate their activities using a barrier synchronization function `__syncthreads()`. When a kernel function calls `__syncthreads()`, all threads in a block will be held at the calling location until every thread in the block reaches the location. This ensures that all threads in a block have completed a phase of their execution of the kernel before any of them can move on to the next phase. The uses of this function will be discussed in the next chapter.
+
+Barrier synchronization is a simple and popular method of coordinating parallel activities. In real life, we often use barrier synchronization to coordinate parallel activities of multiple persons. For example, assume that four friends go to a shopping mall in a car. They can all go to different stores to shop for their own clothes. This is a parallel activity and is much more efficient than if they all remain as a group and sequentially visit all the stores of interest. However, barrier synchronization is needed before they leave the mall. They have to wait until all four friends have returned to the car before they can leave: the ones who finish earlier need to wait for those who finish later. Without the barrier synchronization, one or more persons can be left in the mall when the car leaves!
+
+The `__syncthreads()` command is a block level synchronization barrier. This means that when present, it must be executed by all threads in a block. It is also possible to use `__syncthreads()` in conditional code but only when all threads evaluate identically such code otherwise the execution is likely to hang or produce unintended side effects. A block of threads can begin execution only when the runtime system has secured all the resources needed for all threads in the block to complete execution. This ensures the time proximity of all threads in a block and prevents excessive or indefinite waiting time during barrier synchronization.
+
+By not allowing threads in different blocks to perform barrier synchronization with each other, the CUDA runtime system can execute blocks in any order relative to each other since none of them need to wait for each other. This allows *transparent scalability*: the ability to execute the same piece of code with a different number of execution resources.
+
+<p align="center">
+ <img src="../assets/scalability.png" alt="Drawing", width=48%>
+</p>
+
+For example, in a low-cost system with only a few execution resources, one can execute a small number of blocks at the same time (left). This is slow but incurs a lower power consumption (good for mobile devices). In a high-end implementation with more execution resources, one can execute a large number of blocks at the same time (right).
+
+## Assigning Resources to Blocks
+
+Once a kernel is launched, the CUDA runtime system generates a grid of threads. These threads are assigned to execution resources on a block-by-block basis. The execution resources are organized into streaming multiprocessors (SMs). Multiple thread blocks can be assigned to each SM. For example, a CUDA device may allow up to eight blocks to be assigned to each SM.
+
+In situations where there is an insufficient amount of any one or more types of resources needed for the simultaneous execution of eight blocks, the CUDA runtime automatically reduces the number of blocks assigned to each SM until their combined resource usage falls under the limit. With a limited numbers of SMs and a limited number of blocks that can be assigned to each SM, there is a limit on the number of blocks that can be actively executing in a CUDA device. Most grids contain many more blocks than this number. The runtime system maintains a list of blocks that need to execute and assigns new blocks to SMs as they complete executing the blocks previously assigned to them. One of the SM resource limitations is the number of threads that can be simultaneously tracked and scheduled. It takes hardware resources for SMs to maintain the thread and block indices and track their execution status.
+
+Once a block is assigned to a SM, it is further divided into 32-thread units called **warps**. The warp is the unit of thread scheduling in SMs. Each warp consists of 32 threads of consecutive `threadIdx` values: threads 0-31 from the first warp, 32-63 from the second warp, and so on. In the figure below, there are three blocks: block 1, block 2, and block 3, all assigned to an SM. Each of the three blocks is further divided into warps for scheduling purposes.
+
+<p align="center">
+ <img src="../assets/warps.png" alt="Drawing", width=40%>
+</p>
+
+We can calculate the number of warps that reside in an SM for a given block size and a given number of blocks assigned to each SM. If each block has 256 threads, then each block is divided into `256 / 32 = 8` warps. Thus with 3 blocks, there are a total `8 * 3 = 24` warps in each SM.
+
+An SM is designed to execute all threads in a warp following the single instruction, multiple data (SIMD) model. That is, at any instant in time, one instruction is fetched and executed for all threads in the warp. Note that these threads will apply the same instruction to different portions of the data. As a result, all threads in a warp will always have the same execution timing.
+
+In general, there are fewer SPs than the number of threads assigned to each SM. That is, each SM has only enough hardware to execute instructions from a small subset of all threads assigned to the SM at any point in time. In earlier GPU design, each SM can execute only one instruction for a single warp at any given instant. In more recent designs, each SM can execute instructions for a small number of warps at any given point in time. In either case, the hardware can execute instructions for a small subset of all warps in the SM.
+
+So why do we need to have so many warps in an SM if it can only execute a small subset of them at any instant? The answer is that this is how CUDA processors efficiently execute long-latency operations such as global memory accesses. When an instruction executed by the threads in a warp needs to wait for the result of a previously initiated long-latency operation, the warp is not selected for execution. Another resident warp that is no longer waiting for results will be selected for execution. If more than one warp is ready for execution, a priority mechanism is used to select one for execution. This mechanism of filling the latency time of operations with work from other threads is often called **latency tolerance**.
+
+With enough warps around, the hardware will likely find a warp to execute at any point in time, thus making full use of the execution hardware in spite of these long-latency operations. The selection of ready warps for execution does not introduce any idle time into the execution timeline, which is referred to as *zero-overhead thread scheduling*. This ability to tolerate long operation latencies is the main reason why GPUs do not dedicate nearly as much chip area to cache memories and branch prediction mechanisms as CPUs. As a result, GPUs can dedicate more of its chip area to floating- point execution resources.
+
+Lastly, let's do a simple analysis. Assume that a CUDA device allows up to 8 blocks and 1,024 threads per SM, whichever becomes a limitation first. Furthermore, it allows up to 512 threads in each block. Should we use `8x8` blocks or `16x16` for matrix multiplication?
+
+- With `8x8` blocks, there are 64 threads per block. To fully occupy an SM, we would have `1,024/64=12` blocks. But the maximum is 8 blocks per SM so we would have `64x8=512` threads in each SM. We are underutilizing the SM!
+- With `16x16` blocks, there are 256 threads per block. To fully occupy an SM, we would have `1,024/256=4` blocks. This is under the limitation so we would have full-thread capacity in each SM.
+
+## Summary
+
+Todo
