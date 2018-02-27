@@ -95,10 +95,31 @@ __global__ void imgScaler(float* imgIn, float* imgOut, int H, int W, int C) {
 
 ## Matrix-Matrix Multiplication
 
-In this section, we'll be focusing on the multiplication of square matrices. Suppose we are multiplying A and B and storing the result in C, i.e. `C = A*B`. When performing the multiplication, element (i, j) of C corresponds to the dot product of row i of A and col j of B. 
+In this section, we'll be focusing on the multiplication of square matrices. Suppose we are multiplying A and B and storing the result in C, i.e. `C = A*B`. When performing the multiplication, element (i, j) of C corresponds to the dot product of row i of A and col j of B.
 
 <p align="center">
  <img src="../assets/mmul.png" alt="Drawing", width=48%>
 </p>
 
-As in our `imgScaler` kernel, we need to map each thread of our grid to a single element of P. With this thread-to-data mapping, we effectively divide our matrix P into square tiles, each tile being the size of a block.
+As in our `imgScaler()` kernel, we need to map each thread of our grid to a single element of the output matrix C. With this thread-to-data mapping, we effectively divide our matrix C into square tiles, each tile being the size of a block. Inside each block, a thread is responsible for 1 element in C, but unlike `imgScaler()`, each thread is working on multiple elements from the input matrices A and B. Thus, we're going to see a `for` loop in the kernel. Let's go ahead and write it.
+
+```c
+__global__ void matrixMultiply(float* A, float* B, float* C, int M) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if ((row < M) && (col < M)) {
+        float cumSum = 0;
+        for (int i = 0; i < M; i++) {
+            cumSum += A[row*M + k] * B[k*M + col];
+        }
+        C[row*M + col] = cumSum;
+    }
+}
+```
+How exactly did we compute the indices of A and B? Well, recall that each thread needs to perform a dot product with a row from A and a
+column from B. To perform this dot product, we initialize a variable `cumSum` before the for loop. Then at each loop iteration, we access an element from the row of A, an element from the column of B, multiply the 2 together, and accumulate the result in `cumSum`.
+
+- To access a row element from A, we first need to account for all the rows before us since A is linearized into an equivalent 1D array where the rows are placed one after another in the memory space (column-major). For example, the beginning element of row 1 is accessed using index `1*M` where `M` is the size of the square matrix. In general, the beginning element of row `row` is accessed using index `row*M`. To get the k'th element in that row, we just add k to obtain `row*M + k`.
+- To access a column element from B, we need to realize that the k'th element of column i is located at the i'th element at row k. Accessing the next element in the column requires skipping exactly an entire row, because the next element in the column corresponds to the same element in the next row. Thus, we obtain the index `k*M + col`.
+
