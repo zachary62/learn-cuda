@@ -168,4 +168,10 @@ Lastly, let's do a simple analysis. Assume that a CUDA device allows up to 8 blo
 
 ## Summary
 
-Todo
+The execution configuration parameters (ECPs) define the dimensions of a grid and its blocks. By using unique coordinates in the `blockIdx` and `threadIdx` variables, we can identify the global coordinates of a thread in a grid and thus the partition of data they should work on.
+
+Once a grid is launched, its blocks are assigned to SMs in arbitrary order. Since blocks can be executed in any order relative to each other, the GPU gives us flexibility or *transparent scalability*. A high-end GPU may execute many blocks at the same time, while a lesser-end one will execute fewer blocks at the same time.
+
+Threads are assigned to SMs for execution on a block-by-block basis. Every GPU has a limitation on the amount of resources available in each SM. For example, each CUDA device has a limit on the number of thread blocks and the number of threads each of its SMs can accomodate, whichever becomes a limitation first.
+
+Once a block is assigned to an SM, it is further divided into warps. All threads in a warp have identical execution timing. At any time, the SM executes instructions of only a small subset of its resident warps. This allows the other warps to wait for long-latency operations without slowing down the overall execution throughput of the massive number of execution units.
