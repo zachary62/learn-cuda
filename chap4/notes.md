@@ -110,7 +110,7 @@ __global__ void matrixMultiply(float* A, float* B, float* C, int M) {
 
     if ((row < M) && (col < M)) {
         float cumSum = 0;
-        for (int i = 0; i < M; i++) {
+        for (int k = 0; k < M; k++) {
             cumSum += A[row*M + k] * B[k*M + col];
         }
         C[row*M + col] = cumSum;
