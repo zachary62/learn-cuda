@@ -1,6 +1,6 @@
 # CUDA Memories
 
-Simple kernels like the ones we've been writing will only achieve minimal speedup. This is because they access their data from global memory, which is typically implemented with dynamic random access memory (DRAM). DRAM tends to have long access latencies and finite access bandwidth, which contribute to traffic congestion, ultimately rendering some SMs idle. In this chapter, we'll learn about other memories we can leverage to boost the execution efficiency of our kernels.
+Simple kernels like the ones we've been writing will only achieve minimal speedup. This is because they access their data from global memory, which is typically implemented with dynamic random access memory (DRAM). DRAM tends to have long access latencies and finite access bandwidth, both of which contribute to traffic congestion, ultimately rendering some SMs idle. In this chapter, we'll learn about other memories we can leverage to boost the execution efficiency of our kernels.
 
 ## Memory Access Efficiency
 
@@ -11,4 +11,4 @@ for (int k = 0; k < M; k++) {
     cumSum += A[row*M + k] * B[k*M + col];
 }
 ```
-In this foor loop, there are 2 FLOPS performed (1 multiplication and 1 addition) for every 2 global memory accesses (1 for A and 1 for B). Thus, `CGMA=1/1=1.0`.
+In this for loop, there are 2 FLOPS performed (1 multiplication and 1 addition) for every 2 global memory accesses (1 for A and 1 for B). Thus, `CGMA=1/1=1.0`.
