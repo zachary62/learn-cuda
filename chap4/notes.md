@@ -141,7 +141,7 @@ For example, in a low-cost system with only a few execution resources, one can e
 
 ## Assigning Resources to Blocks
 
-Once a kernel is launched, the CUDA runtime system generates a grid of threads. These threads are assigned to execution resources on a block-by-block basis. The execution resources are organized into streaming multiprocessors (SMs). Multiple thread blocks can be assigned to each SM. For example, a CUDA device may allow up to eight blocks to be assigned to each SM.
+Once a kernel is launched, the CUDA runtime system generates a grid of threads. These threads are assigned to execution resources on a block-by-block basis. The execution resources are organized into streaming multiprocessors (SMs). An SM contains a bunch of streaming processors (aka cores) which contain 1 FPU and 1 ALU, load/store units, L1 and L2 caches, etc. Multiple thread blocks can be assigned to each SM. For example, a CUDA device may allow up to eight blocks to be assigned to each SM.
 
 In situations where there is an insufficient amount of any one or more types of resources needed for the simultaneous execution of eight blocks, the CUDA runtime automatically reduces the number of blocks assigned to each SM until their combined resource usage falls under the limit. With a limited numbers of SMs and a limited number of blocks that can be assigned to each SM, there is a limit on the number of blocks that can be actively executing in a CUDA device. Most grids contain many more blocks than this number. The runtime system maintains a list of blocks that need to execute and assigns new blocks to SMs as they complete executing the blocks previously assigned to them. One of the SM resource limitations is the number of threads that can be simultaneously tracked and scheduled. It takes hardware resources for SMs to maintain the thread and block indices and track their execution status.
 
@@ -151,7 +151,7 @@ Once a block is assigned to a SM, it is further divided into 32-thread units cal
  <img src="../assets/warps.png" alt="Drawing", width=40%>
 </p>
 
-We can calculate the number of warps that reside in an SM for a given block size and a given number of blocks assigned to each SM. If each block has 256 threads, then each block is divided into `256 / 32 = 8` warps. Thus with 3 blocks, there are a total `8 * 3 = 24` warps in each SM.
+We can calculate the number of warps that reside in an SM for a given block size and a given number of blocks assigned to each SM. If each block has 256 threads, then each block is divided into `256 / 32 = 8` warps. Thus with 3 blocks, there are a total `8 * 3 = 24` warps in the SM (assuming the maximum number of threads per SM is not exceeded).
 
 An SM is designed to execute all threads in a warp following the single instruction, multiple data (SIMD) model. That is, at any instant in time, one instruction is fetched and executed for all threads in the warp. Note that these threads will apply the same instruction to different portions of the data. As a result, all threads in a warp will always have the same execution timing.
 
