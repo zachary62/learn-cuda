@@ -73,7 +73,7 @@ __global__ void imgScaler(float* imgIn, float* imgOut, int H, int W) {
 ```
 How would things have changed had we used a different set of ECPs? Suppose we had fixed the number of threads in a block to be 256 in 1 dimension. Then, we would have had 1D blocks within a 2D grid `dim3 dimBlock(ceil(W/256.0), ceil(H/256.0), 1)`. The `col` global coordinate would have stayed the same, but `row` would have collapsed to `blockIdx.y`. We don't even have to instantiate a 2D grid. We could have had `dimBlock = 256` and `dimGrid = ceil((H * W) / 256.0)`. Then, the offset would be exactly as in our vector example `offset = blockIdx.x * blockDim.x + threadIdx.x`. This shows you how manipulating the ECPs can lead to different indexing in the kernel.
 
-The code above assumed the image was grayscale. If we instead work with RGB images, then the pixel values are stored in consecutive triplets (r, g, b) although this order may differ depending on the library used to load the image. With three values where previously there was 1, our image has been effectively stretched in the x direction by a factor of 3 (the 3 channels). Thus, with each thread working on 3 pixels in the image, our code becomes:
+The code above assumed the image was grayscale. If we instead work with RGB images, then the pixel values are stored in consecutive triplets (r, g, b) although this order may differ depending on the library used to load the image. With three values where previously there was 1, consecutive thread indices are now separated by 2 pixels. This means that we should account for triplet data elements by multiplying the offset by 3. Our code, where each thread works on 3 consecutive pixels, becomes:
 
 ```c
 // C = 3 if rgb else 1
@@ -83,7 +83,7 @@ __global__ void imgScaler(float* imgIn, float* imgOut, int H, int W, int C) {
     int col = (blockIdx.x * blockDim.x) + threadIdx.x;
 
     // flatten coordinates
-    int offset = row * W * C + col;
+    int offset = (row * W + col) * C;
 
     if ((row < H) && (col < W)) {
         imgOut[offset] = 2 * imgIn[offset];
