@@ -29,7 +29,7 @@ Obviously, hardware constraints impose limits on the dimensions of the grid and 
 - `gridDim`: each dimension can vary between 1 and 65,536 (this number will vary with newer GPUs).
 - `blockDim`: maximum of 1,024 threads, i.e the product of all dimensions cannot exceed 1,024.
     - allowed ex: `(512, 1, 1)`, `(8, 16, 4)`, `(32, 16, 2)`
-    - illegel ex: `(32, 32, 2)`
+    - illegal ex: `(32, 32, 2)`
 
 ## Mapping Threads to Multidimensional Data
 
