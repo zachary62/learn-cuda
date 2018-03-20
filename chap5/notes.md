@@ -40,4 +40,47 @@ Constant memory is shared for all grids, meaning that all threads in all grids s
 
 ## Tiled Matrix Multiplication
 
-We have an intrinsic trade-off in the use of device memories in CUDA: global memory is large but slow, whereas the shared memory is small but fast.
+So we've taken a look at the different memories that can be leveraged on the GPU. We saw how there is an intrinsic trade-off in the use of device memories in CUDA: global memory is large but slow, whereas the shared memory is small but fast. A common strategy will be to partition the data into subsets called tiles so that each tile fits into the shared memory.
+
+Here's the kernel for tiled matrix multiplication.
+
+```c
+__global__ void tiledMatrixMultiply(float* A, float* B, float* C, int width) {
+    // allocate 2D block of shared memory
+    __shared__ float A_s[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float B_s[TILE_WIDTH][TILE_WIDTH];
+
+    // number of phases it will take to calculate
+    // the full dot product.
+    // this is really just the width of the matrix
+    // divided by the tile width.
+    float num_iters = ceil(width / TILE_WIDTH);
+
+    // row and column of thread
+    // we multiply by TILE_WIDTH rather than blockDim
+    // in case our tile width is smaller than the block
+    // dimension
+    int row = blockIdx.y * TILE_WIDTH + threadIdx.y;
+    int col = blockIdx.x * TILE_WIDTH + threadIdx.x;
+
+    float cumSum = 0;
+    for (int i = 0; i < num_iters; i++) {
+        // linearize row and col for data access
+        int offsetA = (row * width) + (i * TILE_WIDTH) + tx;
+        int offsetB = width*(i * TILE_WIDTH + ty) + col;
+
+        // load tile value into shared memory
+        A_s[threadIdx.y][threadIdx.x] = A[offsetA];
+        B_s[threadIdx.y][threadIdx.x] = B[offsetB];
+        __syncthreads();
+
+        // accumulate partial dot product
+        for (int k=0; k < TILE_WIDTH; k++) {
+            cumSum += A_s[threadIdx.y][k] + B_s[k][threadIdx.x];
+        }
+        __syncthreads();
+    }
+    // once fully accumulated, set the value in result
+    C[row*width + col] = cumSum;
+}
+```
