@@ -32,8 +32,7 @@ void rgb2grayCPU(unsigned char* color, unsigned char* gray, int numRows, int num
 }
 
 // gpu implementation
-__global__ void rgb2grayGPU(unsigned char* Pout, unsigned char* Pin, int width, int height, int numChannels)
-{
+__global__ void rgb2grayGPU(unsigned char* Pout, unsigned char* Pin, int width, int height, int numChannels) {
     // compute global thread coordinates
     int row = threadIdx.y + blockIdx.y*blockDim.y;
     int col = threadIdx.x + blockIdx.x*blockDim.x;

@@ -73,8 +73,7 @@ __global__ void matMulGPU(float* A, float* B, float* C, int numARows, int numACo
 
 
 
-int main(void)
-{
+int main(void) {
     // timers
     GpuTimer timer0, timer1, timer2, timer3;
 
