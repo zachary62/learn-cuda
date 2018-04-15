@@ -90,7 +90,7 @@ __global__ void imgBlurGPU(unsigned char* outImg, unsigned char* inImg, int widt
         int cumSum = 0;
 
         // only a subset of threads in block need to do computation
-        if ((tx >= FILTER_SIZE) && (ty >= FILTER_SIZE) && (ty < bdy + FILTER_SIZE) && (tx < bdx + FILTER_SIZE)) {
+        if ((tx >= FILTER_SIZE) && (ty >= FILTER_SIZE) && (ty < bdy - FILTER_SIZE) && (tx < bdx - FILTER_SIZE)) {
             // top-left corner coordinates
             cornerRow = ty - FILTER_SIZE;
             cornerCol = tx - FILTER_SIZE;
