@@ -1,4 +1,4 @@
-# Memory in C
+## Memory in C
 
 Memory on your computer is flat: it's just a bunch of contiguous addressable locations accomodating 1 byte of data. Variables that require multiple bytes (4 bytes for float, 8 bytes for double) are stored in consecutive byte locations. They are accessed using the address of the starting byte and the number of bytes needed to access the data value. For example, a float (4 bytes) whose starting address is 10 takes up data at addresses 10, 11, 12 and 13.
 
@@ -27,3 +27,9 @@ We note that every time a complete row is traversed, `num_cols` elements are con
 ```python
 offset = (row_idx * num_cols) + col_idx
 ```
+
+## Memory Coalescing
+
+The grouping of threads into warps (i.e. 32 threads) means that there are some optimizations we need to be careful of when accessing global memory. Recall that global memory is an off-chip memory implemented with DRAM. This means that reading from global memory is slow and that reducing access to it is critical for improving the performance of our kernel.
+
+Modern DRAMs use a parallel process: each time a location is accessed, many consecutive locations that includes the requested location are accessed. This has an obvious implication: if the threads in a warp, which are executing the same instruction in parallel, access consecutive memory locations, then the hardware *coalesces* all memory accesses into a consolidated access to consecutive DRAM locations. Thus, if thread 0 accesses location `n`, thread 1 accesses location `n+1`, ..., thread 31 accesses location `n + 31`, then all these accesses are coalesced, that is, combined into 1 single access.

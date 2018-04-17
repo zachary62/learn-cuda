@@ -37,10 +37,8 @@ __global__ void matMulGPU(float* A, float* B, float* C, int numARows, int numACo
     __shared__ float sharedA[TILE_WIDTH][TILE_WIDTH];
     __shared__ float sharedB[TILE_WIDTH][TILE_WIDTH];
 
-    int bx = blockIdx.x;
-    int by = blockIdx.y;
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
+    int bx = blockIdx.x; int by = blockIdx.y;
+    int tx = threadIdx.x; int ty = threadIdx.y;
 
     // coordinates for C
     int row = by * TILE_WIDTH + ty;
@@ -67,10 +65,10 @@ __global__ void matMulGPU(float* A, float* B, float* C, int numARows, int numACo
         // wait until all threads have used tile values
         __syncthreads();
     }
-    if((row < numACols) && (col < numBCols))
+    if((row < numACols) && (col < numBCols)) {
         C[row*numBCols + col] = cumSum;
+    }
 }
-
 
 
 int main(void) {

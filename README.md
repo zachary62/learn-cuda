@@ -10,6 +10,7 @@ Currently learning some GPU CUDA programming.
 * [color2gray](https://github.com/kevinzakka/learning-gpu/blob/master/src/color2gray.cu): turn an RGB image into a Grayscale image.
 * [imgBlur](https://github.com/kevinzakka/learning-gpu/blob/master/src/imgBlur.cu): blur a Grayscale image by averaging pixels in a sliding window.
 * [imgBlurPlus](https://github.com/kevinzakka/learning-gpu/blob/master/src/imgBlurPlus.cu): a more efficient blurring kernel that uses shared memory.
+* [histogram](https://github.com/kevinzakka/learning-gpu/blob/master/src/histogram.cu): compute the histogram of a 1D sequence.
 
 ## References
 
