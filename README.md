@@ -11,6 +11,7 @@ Currently learning some GPU CUDA programming.
 * [imgBlur](https://github.com/kevinzakka/learning-gpu/blob/master/src/imgBlur.cu): blur a Grayscale image by averaging pixels in a sliding window.
 * [imgBlurPlus](https://github.com/kevinzakka/learning-gpu/blob/master/src/imgBlurPlus.cu): a more efficient blurring kernel that uses shared memory.
 * [histogram](https://github.com/kevinzakka/learning-gpu/blob/master/src/histogram.cu): compute the histogram of a 1D sequence.
+* [convolution](https://github.com/kevinzakka/learning-gpu/blob/master/src/tiledConv.cu): apply a tiled 2D convolution on an RGB image.
 
 ## References
 
