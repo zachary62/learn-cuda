@@ -1,0 +1,2 @@
+nvcc matMul.cu -o program
+./program

@@ -1,0 +1,19 @@
+nvcc vector_add_cpu.c -o vector_add
+./vector_add
+time ./vector_add
+It takes 0m0.125s
+
+nvcc vector_add.cu -o vector_add
+./vector_add
+time ./vector_add
+It takes 1.176s
+
+nvprof ./vector_add
+
+nvcc vector_add_thread.cu -o vector_add
+time ./vector_add
+It takes 0.671s
+
+nvcc vector_add_grid.cu -o vector_add
+time ./vector_add
+It takes 0.590s

@@ -1,0 +1,12 @@
+nvcc 1_1.cu -o vector_add
+time ./vector_add
+nvprof ./vector_add
+0.479s
+
+nvcc 1_2.cu -o vector_add
+time ./vector_add
+0.533s
+
+nvcc 1_3.cu -o vector_add
+time ./vector_add
+0.516s
